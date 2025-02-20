@@ -3,7 +3,9 @@ FROM ubuntu:24.04
 
 ENV nord_vpn_token = ""
 ENV nord_vpn_server = ""
+ENV torrent_webui_port = ""
 
+# Setup NordVPN Package
 RUN apt-get update && \
 apt-get install -y --no-install-recommends wget apt-transport-https ca-certificates && \
     apt-get install -y --no-install-recommends wget apt-transport-https ca-certificates && \ 
@@ -17,7 +19,7 @@ apt-get install -y --no-install-recommends wget apt-transport-https ca-certifica
 ENTRYPOINT /etc/init.d/nordvpn start && \
     sleep 5 && \
     nordvpn login --token "${nord_vpn_token}" && \
+    nordvpn whitelist add port ${torrent_webui_port} && \
     nordvpn connect "${nord_vpn_server}" && \
     nordvpn status && \
     tail -f /dev/null
-
