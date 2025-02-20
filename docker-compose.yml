@@ -1,0 +1,29 @@
+services:
+  nordvpn:
+    build: ./nordvpn
+    container_name: nordvpn
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 0
+    environment:
+      - nord_vpn_token=${nord_vpn_token}
+      - nord_vpn_server=${nord_vpn_server}
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    command: '-f "" -r 192.168.1.0/24' # enable firewall and route local network traffic
+  
+  qbittorent:
+    container_name: qbittorent
+    image: linuxserver/qbittorrent:latest
+    restart: unless-stopped
+    network_mode: service:nordvpn
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8080
+    volumes:
+      - ${ROOT}/config/qbittorent/appdata:/config
+      - ${ROOT}/downloads:/downloads
