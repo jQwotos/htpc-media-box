@@ -1,21 +1,5 @@
 services:
-  nordvpn:
-    build: ./nordvpn
-    container_name: nordvpn
-    cap_add:
-      - NET_ADMIN
-    sysctls:
-      net.ipv6.conf.all.disable_ipv6: 0
-    environment:
-      - nord_vpn_token=${nord_vpn_token}
-      - nord_vpn_server=${nord_vpn_server}
-    restart: unless-stopped
-    ports:
-      - 8080:8080
-    command: '-f "" -r 192.168.1.0/24' # enable firewall and route local network traffic
-  
   flaresolverr:
-    # DockerHub mirror flaresolverr/flaresolverr:latest
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
     environment:
@@ -25,7 +9,7 @@ services:
       - TZ=${TZ}
     ports:
       - 8191:8191
-    restart: unless-stopped 
+    restart: unless-stopped
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -42,7 +26,7 @@ services:
 
   radarr:
     container_name: radarr
-    image: linuxserver/radarr:latest
+    image: ghcr.io/hotio/radarr
     restart: unless-stopped
     ports:
       - 7878:7878
@@ -53,34 +37,48 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/radarr:/config # config files
-      - ${ROOT}/media/movies:/movies # movies folder
-      - ${ROOT}/downloads:/downloads # download folder
+      - ${ROOT}/media_files:/data # movies folder
 
   sonarr:
     container_name: sonarr
-    image: lscr.io/linuxserver/sonarr:latest
+    image: ghcr.io/hotio/sonarr
+    restart: unless-stopped
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
     volumes:
       - ${ROOT}/config/sonarr/data:/config
-      - ${ROOT}/media/tvseries:/tv #optional
-      - ${ROOT}/downloads:/downloads #optional
-    restart: unless-stopped
+      - ${ROOT}/media_files:/data
     ports:
       - 8989:8989
 
-  qbittorent:
-    container_name: qbittorent
+  qbittorrent:
+    container_name: qbittorrent
     image: linuxserver/qbittorrent:latest
     restart: unless-stopped
-    network_mode: service:nordvpn
+    ports:
+      - 8080:8080
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - WEBUI_PORT=${qbittorent_webui_port}
+      - WEBUI_PORT=8080
     volumes:
       - ${ROOT}/config/qbittorent/appdata:/config
-      - ${ROOT}/downloads:/downloads
+      - ${ROOT}/media_files/downloads:/downloads
+
+  plex:
+    container_name: plex
+    image: lscr.io/linuxserver/plex:latest
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - VERSION=docker
+      - PLEX_CLAIM=${PLEX_CLAIM}
+    volumes:
+      - ${ROOT}/config/plex:/config
+      - ${ROOT}/media_files:/media_files
+    restart: unless-stopped
