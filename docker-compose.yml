@@ -1,14 +1,61 @@
 services:
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    container_name: caddy
+    ports:
+      - 8096:8096 # Jellyfin
+      - 8090:8090 # Beszel
+      - 9696:9696 # Prowlarr
+      - 7878:7878 # Radarr
+      - 8989:8989 # Sonarr
+      - 8080:8080 # qBittorrent
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy_data:/data
+      - ./caddy_config:/config
+      - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
+
+  jellyfin:
+    image: linuxserver/jellyfin:latest
+    container_name: jellyfin
+    volumes:
+      - ${ROOT}/config/jellyfin:/config
+      - ${ROOT}/cache:/cache
+      - ${LFS}:/data
+    restart: unless-stopped
+
+  beszel:
+    image: henrygd/beszel:latest
+    container_name: beszel
+    restart: unless-stopped
+    volumes:
+      - ./beszel_data:/beszel_data
+      - ./beszel_socket:/beszel_socket
+
+  beszel-agent:
+    image: "henrygd/beszel-agent"
+    container_name: "beszel-agent"
+    restart: unless-stopped
+    ports:
+      - 45876:45876
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # monitor other disks / partitions by mounting a folder in /extra-filesystems
+      - ${LFS}/.beszel:/extra-filesystems/LFS:ro
+    environment:
+      LISTEN: 45876
+      KEY: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIy3y28Ff6IG7JS+h4lV/k7tdOujKX6R1MEk8wOS4yKA"
+
   flaresolverr:
+    # DockerHub mirror flaresolverr/flaresolverr:latest
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
     environment:
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - LOG_HTML=${LOG_HTML:-false}
       - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
       - TZ=${TZ}
-    ports:
-      - 8191:8191
+      - LOG_LEVEL=debug
+      - LOG_HTML=true
     restart: unless-stopped
 
   prowlarr:
@@ -21,15 +68,11 @@ services:
     volumes:
       - ${ROOT}/config/prowlarr/data:/config
     restart: unless-stopped
-    ports:
-      - 9696:9696
 
   radarr:
     container_name: radarr
     image: ghcr.io/hotio/radarr
     restart: unless-stopped
-    ports:
-      - 7878:7878
     environment:
       - PUID=${PUID} # default user id, defined in .env
       - PGID=${PGID} # default group id, defined in .env
@@ -37,7 +80,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/radarr:/config # config files
-      - ${ROOT}/media_files:/data # movies folder
+      - ${LFS}:/data # movies folder
 
   sonarr:
     container_name: sonarr
@@ -49,36 +92,18 @@ services:
       - TZ=${TZ}
     volumes:
       - ${ROOT}/config/sonarr/data:/config
-      - ${ROOT}/media_files:/data
-    ports:
-      - 8989:8989
+      - ${LFS}:/data #optional
+      - ${ROOT}/cache/sonarr:/cache
 
-  qbittorrent:
-    container_name: qbittorrent
+  qbittorent:
+    container_name: qbittorent
     image: linuxserver/qbittorrent:latest
     restart: unless-stopped
-    ports:
-      - 8080:8080
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - WEBUI_PORT=8080
+      - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
     volumes:
       - ${ROOT}/config/qbittorent/appdata:/config
-      - ${ROOT}/media_files/downloads:/downloads
-
-  plex:
-    container_name: plex
-    image: lscr.io/linuxserver/plex:latest
-    network_mode: host
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - VERSION=docker
-      - PLEX_CLAIM=${PLEX_CLAIM}
-    volumes:
-      - ${ROOT}/config/plex:/config
-      - ${ROOT}/media_files:/media_files
-    restart: unless-stopped
+      - ${LFS}/downloads:/downloads
