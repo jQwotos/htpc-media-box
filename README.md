@@ -21,6 +21,8 @@ Note that you won't be able to access any of the services without Tailscale sinc
 
 Replace the `machine.tailscaledomain.ts.net` inside of the `Caddyfile` with your MagicDNS domain.
 
+Copy the `.env.template` to `.env` and change the LFS (large file storage) env variable to your largest mounted partition.
+
 # Port Mappings
 
 - 8191 – flaresolverr
