@@ -19,8 +19,8 @@ machine.tailscaledomain.ts.net:8989 {
 }
 
 machine.tailscaledomain.ts.net:8080 {
-        reverse_proxy qbittorent:8080 {
-                header_up Host qbittorent:8080
+        reverse_proxy qbittorrent:8080 {
+                header_up Host qbittorrent:8080
                 header_up X-Forward-Host {hostport}
                 header_up -Origin
                 header_up -Referer

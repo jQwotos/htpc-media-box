@@ -3,9 +3,10 @@ services:
     image: caddy:latest
     restart: unless-stopped
     container_name: caddy
+    environment:
+      - TZ=${TZ}
     ports:
       - 8096:8096 # Jellyfin
-      - 8090:8090 # Beszel
       - 9696:9696 # Prowlarr
       - 7878:7878 # Radarr
       - 8989:8989 # Sonarr
@@ -19,33 +20,15 @@ services:
   jellyfin:
     image: linuxserver/jellyfin:latest
     container_name: jellyfin
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     volumes:
       - ${ROOT}/config/jellyfin:/config
       - ${ROOT}/cache:/cache
       - ${LFS}:/data
     restart: unless-stopped
-
-  beszel:
-    image: henrygd/beszel:latest
-    container_name: beszel
-    restart: unless-stopped
-    volumes:
-      - ./beszel_data:/beszel_data
-      - ./beszel_socket:/beszel_socket
-
-  beszel-agent:
-    image: "henrygd/beszel-agent"
-    container_name: "beszel-agent"
-    restart: unless-stopped
-    ports:
-      - 45876:45876
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      # monitor other disks / partitions by mounting a folder in /extra-filesystems
-      - ${LFS}/.beszel:/extra-filesystems/LFS:ro
-    environment:
-      LISTEN: 45876
-      KEY: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIy3y28Ff6IG7JS+h4lV/k7tdOujKX6R1MEk8wOS4yKA"
 
   flaresolverr:
     # DockerHub mirror flaresolverr/flaresolverr:latest
@@ -63,7 +46,7 @@ services:
     container_name: prowlarr
     environment:
       - PUID=${PUID}
-      - PGID=${GUID}
+      - PGID=${PGID}
       - TZ=${TZ}
     volumes:
       - ${ROOT}/config/prowlarr/data:/config
@@ -95,8 +78,8 @@ services:
       - ${LFS}:/data #optional
       - ${ROOT}/cache/sonarr:/cache
 
-  qbittorent:
-    container_name: qbittorent
+  qbittorrent:
+    container_name: qbittorrent
     image: linuxserver/qbittorrent:latest
     restart: unless-stopped
     environment:
@@ -105,5 +88,5 @@ services:
       - TZ=${TZ}
       - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
     volumes:
-      - ${ROOT}/config/qbittorent/appdata:/config
+      - ${ROOT}/config/qbittorrent/appdata:/config
       - ${LFS}/downloads:/downloads
