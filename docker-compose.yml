@@ -89,4 +89,4 @@ services:
       - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
     volumes:
       - ${ROOT}/config/qbittorrent/appdata:/config
-      - ${LFS}/downloads:/downloads
+      - ${LFS}:/data
